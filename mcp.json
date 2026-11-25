@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "jjf-platform": {
+      "type": "streamable-http",
+      "url": "https://env-00jy6kl6893u.dev-hz.cloudbasefunction.cn/platform-mcp",
+      "headers": {
+        "Authorization": "Bearer ${JJF_MCP_TOKEN}"
+      }
+    }
+  }
+}
