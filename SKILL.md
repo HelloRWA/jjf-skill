@@ -1,23 +1,32 @@
 ---
 name: jjf-skill
-description: 通过 JJF 孵化实验室的用户级 MCP，查询和操作当前账号的 AI 孵化器与 AI 活动地图。用于空间项目、认领与转让、邀请码入驻，以及活动报名、发起、导出和签到等请求；支付、图片上传、退款与平台审核不在此 Skill 内完成。
+description: 通过 JJF 孵化实验室 MCP 查询和操作当前账号的 AI 孵化器与 AI 活动地图，并通过公开只读城市索引发现城市、区县、景点、文旅线路与赛事接待 Skill，在用户选择后进行逻辑接管或返回索引。用于空间项目、认领与转让、邀请码入驻、活动报名与签到，以及城市介绍、目的地或同名地点搜索、旅游规划、武汉、数命 SPU 与 SAIG 等请求；公共 jjf-city 无需 Token，jjf-platform 仍需用户级 Token，支付、图片上传、退款与平台审核不在此 Skill 内完成。
 ---
 
 # JJF 孵化实验室
 
-使用名为 `jjf-platform` 的远程 MCP，以 Token 绑定的 JJF 账号执行真实读取和写入。这里不是演示环境，也不能选择或传入其他用户 ID。
+本 Skill 使用两个边界独立的远程 MCP：`jjf-city` 提供公开城市内容的只读索引，`jjf-platform` 以 Token 绑定的 JJF 账号执行真实读取和写入。平台操作不是演示环境，也不能选择或传入其他用户 ID。
 
 ## 连接检查
 
-- MCP 地址：`https://env-00jy6kl6893u.dev-hz.cloudbasefunction.cn/platform-mcp`
+### 公共城市索引
+
+- 服务名：`jjf-city`；MCP 地址：`https://env-00jy6kl6893u.dev-hz.cloudbasefunction.cn/city-mcp`。
+- Transport：Streamable HTTP；公开只读，无需 JJF 登录、用户 Token 或 `Authorization`。
+- 城市、区县、景点、目的地、文旅线路与赛事接待请求按 [references/cities.md](references/cities.md) 处理，不得把 `jjf-platform` 的 Token 转发给城市 MCP。
+
+### 用户级平台
+
+- 服务名：`jjf-platform`；MCP 地址：`https://env-00jy6kl6893u.dev-hz.cloudbasefunction.cn/platform-mcp`。
 - Transport：Streamable HTTP；认证：`Authorization: Bearer <用户级 Token>`。
 - 仓库中的 `mcp.json` 使用 `${JJF_MCP_TOKEN}` 占位符。用户需要在 JJF H5「我的 → Agent 接入（MCP）」生成自己的 Token，并按宿主方式注入本机私密配置。
 - 不要要求用户把 Token 粘贴到聊天中，不要回显、记录或提交 Token。工具不可用或认证失效时，引导用户重新生成接入提示词，不要尝试其他账号或绕过登录。
-- 以 MCP `tools/list` 返回的名称和 inputSchema 为最终接口依据；本 Skill 的参考文档说明业务规则与推荐工作流。
+- 两个服务均以各自 MCP `tools/list` 返回的名称和 inputSchema 为最终接口依据；本 Skill 的参考文档说明业务规则与推荐工作流。
 
 ## 使用流程
 
-1. 判断请求属于孵化空间还是活动，并只读取对应参考：
+1. 判断请求属于城市索引、孵化空间还是活动，并只读取对应参考：
+   - `city_*`、城市、区县、景点、目的地、文旅、旅游线路、赛事接待、武汉、数命 SPU 或 SAIG → [references/cities.md](references/cities.md)。城市发现必须调用 `city_search`，不能凭记忆猜测入驻状态；同名歧义、用户显式选择、逻辑接管与返回均按该参考执行。
    - `ad_grid_*`、孵化空间、空间项目、认领、挂牌、空间邀请码 → [references/incubator.md](references/incubator.md)。
    - `activity_*`、活动地图、活动报名、发起活动、签到、助邀码 → [references/activities.md](references/activities.md)。
 2. 写入前先读取目标最新状态与当前账号权限。不要仅凭历史对话推断归属、价格、名额、状态或可操作权限。
@@ -30,7 +39,7 @@ description: 通过 JJF 孵化实验室的用户级 MCP，查询和操作当前�
 
 ## 写入与安全边界
 
-- 所有操作只作用于 Token 绑定账号。不能提升权限、读取无权访问的数据、伪造支付/审核/签到结果，或绕过所有权、名额、积分、状态机与时间窗口。
+- 所有 `jjf-platform` 账号操作只作用于 Token 绑定账号；`jjf-city` 不绑定账号，也不执行写入。不能提升权限、读取无权访问的数据、伪造支付/审核/签到结果，或绕过所有权、名额、积分、状态机与时间窗口。
 - 有 `idempotencyKey` / `clientRequestId` 的网络重试必须复用原键；新的逻辑操作使用新键。无幂等键的操作按对应参考文档先查询再决定是否重试。
 - `UNAUTHORIZED`、`FORBIDDEN`、`MCP_TOKEN_INVALID`、`TOKEN_EXPIRED` 等错误不能当成业务成功。权限不足时停止，不退而尝试其他身份。
 - 手机号、报名 CSV、Token、订单与资产信息只提供给有权查看的当前用户，不写入公开文档或无关服务。
