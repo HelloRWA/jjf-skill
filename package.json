@@ -1,0 +1,11 @@
+{
+  "name": "jjf-skill",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/city-index.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

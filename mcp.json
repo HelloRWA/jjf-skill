@@ -6,6 +6,10 @@
       "headers": {
         "Authorization": "Bearer ${JJF_MCP_TOKEN}"
       }
+    },
+    "jjf-city": {
+      "type": "streamable-http",
+      "url": "https://env-00jy6kl6893u.dev-hz.cloudbasefunction.cn/city-mcp"
     }
   }
 }
